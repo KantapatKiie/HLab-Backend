@@ -6,7 +6,7 @@ import { AzureService } from '@modules/authentication/azure.service';
 import { MasterModule } from '@modules/master/master.module';
 import { TransactionModule } from '@modules/transaction/transaction.module';
 import { HttpModule } from '@nestjs/axios';
-import { CacheInterceptor, CacheModule, CacheModuleOptions, CacheStoreFactory } from '@nestjs/cache-manager';
+import { CacheModule, CacheModuleOptions } from '@nestjs/cache-manager';
 import {
   MiddlewareConsumer,
   Module,
@@ -14,20 +14,19 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import * as redisStore from 'cache-manager-ioredis';
 import { CacheManageModule } from '@modules/cache/cache.module';
 import { AppController } from './controllers/app.controller';
 
-
 @Module({
   imports: [
     CacheModule.registerAsync<CacheModuleOptions>({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        return ({
+        return {
           ttl: 60 * 60 * 24,
           store: redisStore,
           host: configService.get('redis.host'),
@@ -35,8 +34,8 @@ import { AppController } from './controllers/app.controller';
           password: configService.get('redis.password'),
           tls: {
             rejectUnauthorized: false,
-          }
-        })
+          },
+        };
       },
       inject: [ConfigService],
       isGlobal: true,
@@ -55,7 +54,7 @@ import { AppController } from './controllers/app.controller';
     HttpModule,
     TransactionModule,
     MasterModule,
-    CacheManageModule
+    CacheManageModule,
   ],
   controllers: [AppController],
   providers: [
@@ -70,12 +69,10 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthenticateMiddleware)
-      .exclude(
-        {
-          path: `docs`,
-          method: RequestMethod.GET,
-        },
-      )
+      .exclude({
+        path: `docs`,
+        method: RequestMethod.GET,
+      })
       .forRoutes(`*`);
   }
 }
